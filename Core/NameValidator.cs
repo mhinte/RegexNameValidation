@@ -6,24 +6,21 @@ namespace Core
 {
     public static class NameValidator
     {
-        /// <summary>
-        /// Prüft den Namen und liefert im Fehlerfall genaue Details zur verletzten Regel zurück.
-        /// </summary>
         public static Result<string, string> Validate(string? itemName, ItemType itemType, string? projectId)
         {
             if (string.IsNullOrWhiteSpace(itemName))
                 return Result<string, string>.Err("[System] Der Name darf nicht null oder leer sein.");
 
-            var rules = RuleProvider.GetRules(itemType, projectId ?? string.Empty);
+            // Wir holen die eine zutreffende Regel
+            var rule = RuleProvider.GetRule(itemType, projectId ?? string.Empty);
 
-            foreach (var rule in rules)
+            // Wenn es eine Regel gibt, prüfe sie
+            if (rule != null && !rule.Pattern.IsMatch(itemName))
             {
-                if (!rule.Pattern.IsMatch(itemName))
-                {
-                    return Result<string, string>.Err($"[{rule.Name}] {rule.ErrorMessage}");
-                }
+                return Result<string, string>.Err($"[{rule.Name}] {rule.ErrorMessage}");
             }
 
+            // Wenn die Regel passt (oder es gar keine Regel für diesen Typ gibt), ist es Ok
             return Result<string, string>.Ok(itemName);
         }
 
@@ -32,14 +29,11 @@ namespace Core
             if (string.IsNullOrWhiteSpace(itemName))
                 return false;
 
-            var rules = RuleProvider.GetRules(itemType, projectId ?? string.Empty);
+            var rule = RuleProvider.GetRule(itemType, projectId ?? string.Empty);
 
-            foreach (var rule in rules)
+            if (rule != null && !rule.Pattern.IsMatch(itemName))
             {
-                if (!rule.Pattern.IsMatch(itemName))
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
